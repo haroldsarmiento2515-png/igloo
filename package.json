@@ -9,7 +9,8 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-scripts": "5.0.1",
-    "three": "^0.182.0"
+    "three": "^0.182.0",
+    "@react-three/postprocessing": "^2.16.2"
   },
   "scripts": {
     "start": "react-scripts start",
