@@ -1,9 +1,8 @@
-"use client";
+import Scene from "./components/Scene";
+import OverlayUI from "./components/OverlayUI";
+import "./index.css";
 
-import Scene from "../src/components/Scene";
-import OverlayUI from "../src/components/OverlayUI";
-
-export default function Home() {
+export default function App() {
   return (
     <main className="page">
       <Scene />
