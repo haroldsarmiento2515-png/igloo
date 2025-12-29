@@ -1,38 +1,64 @@
-.App {
-  text-align: center;
-}
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
-}
-
-.App-header {
-  background-color: #282c34;
+.igloo-app {
+  position: relative;
   min-height: 100vh;
+  background: #c3c9d4;
+  overflow: hidden;
+  font-family: 'Space Grotesk', system-ui, -apple-system, sans-serif;
+}
+
+.igloo-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.igloo-copy {
+  position: absolute;
+  bottom: clamp(32px, 6vw, 72px);
+  left: clamp(24px, 6vw, 80px);
+  color: #f5f8ff;
+  max-width: min(520px, 80vw);
+  z-index: 1;
+  text-shadow: 0 18px 35px rgba(0, 0, 0, 0.25);
+}
+
+.igloo-wordmark {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
+  align-items: flex-end;
+  gap: 16px;
+  font-size: clamp(48px, 12vw, 140px);
+  font-weight: 700;
+  letter-spacing: 0.08em;
 }
 
-.App-link {
-  color: #61dafb;
+.igloo-wordmark span {
+  line-height: 0.8;
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
+.igloo-wordmark small {
+  font-size: clamp(14px, 2.5vw, 26px);
+  letter-spacing: 0.35em;
+  margin-bottom: 6px;
+}
+
+.igloo-copy p {
+  margin: 16px 0 0;
+  font-size: clamp(14px, 2.2vw, 18px);
+  line-height: 1.5;
+  color: #f1f4fb;
+  max-width: 420px;
+}
+
+@media (max-width: 600px) {
+  .igloo-wordmark {
+    flex-direction: column;
+    align-items: flex-start;
   }
-  to {
-    transform: rotate(360deg);
+
+  .igloo-wordmark small {
+    margin-bottom: 0;
   }
 }
