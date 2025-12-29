@@ -1,38 +1,48 @@
-import { useMemo } from "react";
+import { useFrame } from "@react-three/fiber";
+import { useMemo, useRef } from "react";
 import * as THREE from "three";
 
-export default function Particles({ density = 1, reducedMotion }) {
-  const count = reducedMotion
-    ? 200
-    : Math.floor(700 + Math.max(density, 0.2) * 450);
-
-  const positions = useMemo(() => {
+export default function Particles({ count = 800, reducedMotion }) {
+  const pointsRef = useRef(null);
+  const { positions, velocities } = useMemo(() => {
     const array = new Float32Array(count * 3);
+    const speed = new Float32Array(count);
     for (let i = 0; i < count; i += 1) {
-      const radius = 6 + Math.random() * 6;
-      const theta = Math.random() * Math.PI * 2;
-      const phi = Math.acos(2 * Math.random() - 1);
-      array[i * 3] = radius * Math.sin(phi) * Math.cos(theta);
-      array[i * 3 + 1] = radius * Math.sin(phi) * Math.sin(theta);
-      array[i * 3 + 2] = radius * Math.cos(phi);
+      array[i * 3] = (Math.random() - 0.5) * 20;
+      array[i * 3 + 1] = Math.random() * 8 + 1;
+      array[i * 3 + 2] = (Math.random() - 0.5) * 20;
+      speed[i] = 0.2 + Math.random() * 0.6;
     }
-    return array;
+    return { positions: array, velocities: speed };
   }, [count]);
 
   const material = useMemo(
     () =>
       new THREE.PointsMaterial({
-        color: "#b8d9ff",
-        size: 0.03,
+        color: "#c7e6ff",
+        size: reducedMotion ? 0.035 : 0.025,
         sizeAttenuation: true,
         transparent: true,
-        opacity: reducedMotion ? 0.35 : 0.55,
+        opacity: reducedMotion ? 0.35 : 0.6,
       }),
     [reducedMotion]
   );
 
+  useFrame((_, delta) => {
+    if (!pointsRef.current || reducedMotion) return;
+    const positionAttr = pointsRef.current.geometry.attributes.position;
+    for (let i = 0; i < count; i += 1) {
+      const index = i * 3 + 1;
+      positionAttr.array[index] -= velocities[i] * delta;
+      if (positionAttr.array[index] < -1) {
+        positionAttr.array[index] = 9;
+      }
+    }
+    positionAttr.needsUpdate = true;
+  });
+
   return (
-    <points>
+    <points ref={pointsRef}>
       <bufferGeometry>
         <bufferAttribute
           attach="attributes-position"
