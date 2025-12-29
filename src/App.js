@@ -1,10 +1,50 @@
+import { useRef } from 'react';
 import './App.css';
 
 function App() {
+  const sceneRef = useRef(null);
+
+  const handlePointerMove = (event) => {
+    const scene = sceneRef.current;
+    if (!scene) {
+      return;
+    }
+    const rect = scene.getBoundingClientRect();
+    const x = (event.clientX - rect.left) / rect.width;
+    const y = (event.clientY - rect.top) / rect.height;
+    const tiltX = (y - 0.5) * 2;
+    const tiltY = (x - 0.5) * 2;
+
+    scene.style.setProperty('--tilt-x', tiltX.toFixed(3));
+    scene.style.setProperty('--tilt-y', tiltY.toFixed(3));
+    scene.style.setProperty('--glow-x', `${(x * 100).toFixed(2)}%`);
+    scene.style.setProperty('--glow-y', `${(y * 100).toFixed(2)}%`);
+  };
+
+  const handlePointerLeave = () => {
+    const scene = sceneRef.current;
+    if (!scene) {
+      return;
+    }
+    scene.style.setProperty('--tilt-x', '0');
+    scene.style.setProperty('--tilt-y', '0');
+    scene.style.setProperty('--glow-x', '50%');
+    scene.style.setProperty('--glow-y', '40%');
+  };
+
   return (
     <div className="app">
-      <div className="scene">
-        <header className="top-left">
+      <div
+        className="scene"
+        ref={sceneRef}
+        onPointerMove={handlePointerMove}
+        onPointerLeave={handlePointerLeave}
+      >
+        <div className="terrain terrain-back" aria-hidden="true" />
+        <div className="terrain terrain-mid" aria-hidden="true" />
+        <div className="terrain terrain-front" aria-hidden="true" />
+
+        <header className="top-left parallax parallax-soft">
           <div className="logo">IGLOO</div>
           <div className="copyright">&#47;&#47; Copyright © 2024</div>
           <div className="rights">
@@ -14,9 +54,9 @@ function App() {
           </div>
         </header>
 
-        <aside className="top-right">
+        <aside className="top-right parallax parallax-soft">
           <div className="manifesto-label">
-            <span className="slashes">//////</span>
+            <span className="slashes">{'//////'}</span>
             Manifesto
           </div>
           <p>
@@ -34,7 +74,7 @@ function App() {
           </p>
         </aside>
 
-        <div className="igloo">
+        <div className="igloo parallax parallax-strong">
           <svg viewBox="0 0 420 320" role="img" aria-label="Igloo illustration">
             <defs>
               <linearGradient id="iglooGlow" x1="0" y1="0" x2="1" y2="1">
@@ -81,7 +121,7 @@ function App() {
           </svg>
         </div>
 
-        <div className="sound">
+        <div className="sound parallax parallax-soft">
           <span className="sound-icon" aria-hidden="true">
             🔊
           </span>
