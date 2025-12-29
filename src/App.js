@@ -1,12 +1,23 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import './App.css';
 
-const FLOATING_ORB_COUNT = 48;
+const STAR_COUNT = 900;
+const SATELLITE_COUNT = 12;
 
 function App() {
   const canvasRef = useRef(null);
   const frameRef = useRef(0);
+  const satellites = useMemo(
+    () =>
+      Array.from({ length: SATELLITE_COUNT }, () => ({
+        angle: Math.random() * Math.PI * 2,
+        speed: 0.002 + Math.random() * 0.002,
+        radius: 2.5 + Math.random() * 1.4,
+        offset: (Math.random() - 0.5) * 1.2,
+      })),
+    [],
+  );
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -15,8 +26,10 @@ function App() {
     }
 
     const scene = new THREE.Scene();
+    scene.fog = new THREE.Fog(0x05070f, 6, 18);
+
     const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
-    camera.position.set(0, 0, 8);
+    camera.position.set(0, 0.6, 8);
 
     const renderer = new THREE.WebGLRenderer({
       canvas,
@@ -27,79 +40,82 @@ function App() {
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
 
-    const ambientLight = new THREE.AmbientLight(0x8fb7ff, 0.7);
+    const ambientLight = new THREE.AmbientLight(0x8fb7ff, 0.6);
     const keyLight = new THREE.DirectionalLight(0xffffff, 1.1);
-    keyLight.position.set(4, 6, 3);
-    const rimLight = new THREE.DirectionalLight(0x7dd3fc, 0.8);
+    keyLight.position.set(6, 8, 6);
+    const rimLight = new THREE.DirectionalLight(0x7dd3fc, 0.9);
     rimLight.position.set(-6, -4, 4);
-
     scene.add(ambientLight, keyLight, rimLight);
 
     const heroGroup = new THREE.Group();
     scene.add(heroGroup);
 
-    const coreMaterial = new THREE.MeshPhysicalMaterial({
-      color: 0x9ad1ff,
-      roughness: 0.2,
-      metalness: 0.1,
-      transmission: 0.75,
-      thickness: 0.9,
-      clearcoat: 0.6,
-      clearcoatRoughness: 0.25,
-    });
-
-    const coreGeometry = new THREE.TorusKnotGeometry(1.4, 0.45, 240, 24);
-    const coreMesh = new THREE.Mesh(coreGeometry, coreMaterial);
-    heroGroup.add(coreMesh);
-
-    const haloGeometry = new THREE.RingGeometry(2.2, 2.55, 64);
-    const haloMaterial = new THREE.MeshBasicMaterial({
-      color: 0x70e1ff,
-      transparent: true,
-      opacity: 0.35,
-      side: THREE.DoubleSide,
-    });
-    const haloMesh = new THREE.Mesh(haloGeometry, haloMaterial);
-    haloMesh.rotation.x = Math.PI / 2.3;
-    heroGroup.add(haloMesh);
-
-    const shardGeometry = new THREE.OctahedronGeometry(0.35, 1);
-    const shardMaterial = new THREE.MeshPhysicalMaterial({
-      color: 0xe2f3ff,
+    const globeGeometry = new THREE.SphereGeometry(1.65, 96, 96);
+    const globeMaterial = new THREE.MeshPhysicalMaterial({
+      color: 0x8ad3ff,
       roughness: 0.15,
       metalness: 0.05,
-      transmission: 0.85,
-      thickness: 0.5,
-      clearcoat: 0.8,
+      transmission: 0.7,
+      thickness: 1,
+      clearcoat: 0.85,
+      clearcoatRoughness: 0.15,
+    });
+    const globe = new THREE.Mesh(globeGeometry, globeMaterial);
+    heroGroup.add(globe);
+
+    const shellGeometry = new THREE.SphereGeometry(1.82, 64, 64);
+    const shellMaterial = new THREE.MeshBasicMaterial({
+      color: 0x4cc9ff,
+      transparent: true,
+      opacity: 0.15,
+      wireframe: true,
+    });
+    const shell = new THREE.Mesh(shellGeometry, shellMaterial);
+    heroGroup.add(shell);
+
+    const ringGeometry = new THREE.TorusGeometry(2.5, 0.06, 24, 160);
+    const ringMaterial = new THREE.MeshStandardMaterial({
+      color: 0x6ee4ff,
+      emissive: 0x3a7bff,
+      emissiveIntensity: 0.3,
+      roughness: 0.2,
+      metalness: 0.2,
+    });
+    const ring = new THREE.Mesh(ringGeometry, ringMaterial);
+    ring.rotation.x = Math.PI / 2.6;
+    ring.rotation.y = Math.PI / 5;
+    heroGroup.add(ring);
+
+    const satelliteGeometry = new THREE.OctahedronGeometry(0.18, 1);
+    const satelliteMaterial = new THREE.MeshStandardMaterial({
+      color: 0xf3fbff,
+      emissive: 0x6cc8ff,
+      emissiveIntensity: 0.4,
+      roughness: 0.35,
     });
 
-    const shards = Array.from({ length: 8 }, (_, index) => {
-      const shard = new THREE.Mesh(shardGeometry, shardMaterial);
-      const angle = (index / 8) * Math.PI * 2;
-      shard.position.set(Math.cos(angle) * 2.8, Math.sin(angle) * 1.4, (index % 2) * 1.2 - 0.6);
-      shard.rotation.set(angle, angle / 2, angle / 3);
-      heroGroup.add(shard);
-      return shard;
+    const satelliteMeshes = satellites.map(() => {
+      const mesh = new THREE.Mesh(satelliteGeometry, satelliteMaterial);
+      heroGroup.add(mesh);
+      return mesh;
     });
 
-    const orbGeometry = new THREE.SphereGeometry(0.08, 16, 16);
-    const orbMaterial = new THREE.MeshStandardMaterial({
-      color: 0x7dd3fc,
-      emissive: 0x2f6bff,
-      emissiveIntensity: 0.5,
-      roughness: 0.4,
+    const starGeometry = new THREE.BufferGeometry();
+    const starPositions = new Float32Array(STAR_COUNT * 3);
+    for (let i = 0; i < STAR_COUNT; i += 1) {
+      starPositions[i * 3] = (Math.random() - 0.5) * 30;
+      starPositions[i * 3 + 1] = (Math.random() - 0.5) * 20;
+      starPositions[i * 3 + 2] = -Math.random() * 25;
+    }
+    starGeometry.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
+    const starMaterial = new THREE.PointsMaterial({
+      color: 0xffffff,
+      size: 0.06,
+      opacity: 0.75,
+      transparent: true,
     });
-
-    const orbs = Array.from({ length: FLOATING_ORB_COUNT }, () => {
-      const orb = new THREE.Mesh(orbGeometry, orbMaterial);
-      orb.position.set(
-        (Math.random() - 0.5) * 12,
-        (Math.random() - 0.5) * 7,
-        (Math.random() - 0.5) * 6,
-      );
-      scene.add(orb);
-      return orb;
-    });
+    const starField = new THREE.Points(starGeometry, starMaterial);
+    scene.add(starField);
 
     let mouseX = 0;
     let mouseY = 0;
@@ -123,23 +139,28 @@ function App() {
     const animate = () => {
       frameRef.current = requestAnimationFrame(animate);
 
-      heroGroup.rotation.y += 0.003;
-      heroGroup.rotation.x += 0.0015;
+      heroGroup.rotation.y += 0.0025;
+      heroGroup.rotation.x += 0.0009;
 
-      coreMesh.rotation.z -= 0.002;
+      shell.rotation.y -= 0.002;
+      ring.rotation.z += 0.003;
 
-      shards.forEach((shard, index) => {
-        shard.rotation.x += 0.004 + index * 0.0004;
-        shard.rotation.y -= 0.003 + index * 0.0003;
+      satelliteMeshes.forEach((mesh, index) => {
+        const { angle, speed, radius, offset } = satellites[index];
+        const updatedAngle = angle + speed * frameRef.current;
+        mesh.position.set(
+          Math.cos(updatedAngle) * radius,
+          Math.sin(updatedAngle * 1.3) * 0.8 + offset,
+          Math.sin(updatedAngle) * radius * 0.5,
+        );
+        mesh.rotation.x += 0.02;
+        mesh.rotation.y += 0.015;
       });
 
-      orbs.forEach((orb, index) => {
-        orb.position.y += Math.sin(Date.now() * 0.001 + index) * 0.0009;
-        orb.position.x += Math.cos(Date.now() * 0.001 + index) * 0.0006;
-      });
+      starField.rotation.y += 0.0006;
 
-      camera.position.x += (mouseX * 0.8 - camera.position.x) * 0.05;
-      camera.position.y += (-mouseY * 0.6 - camera.position.y) * 0.05;
+      camera.position.x += (mouseX * 0.9 - camera.position.x) * 0.04;
+      camera.position.y += (-mouseY * 0.6 - camera.position.y) * 0.04;
       camera.lookAt(scene.position);
 
       renderer.render(scene, camera);
@@ -151,105 +172,150 @@ function App() {
       cancelAnimationFrame(frameRef.current);
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('resize', handleResize);
-      coreGeometry.dispose();
-      haloGeometry.dispose();
-      shardGeometry.dispose();
-      orbGeometry.dispose();
-      coreMaterial.dispose();
-      haloMaterial.dispose();
-      shardMaterial.dispose();
-      orbMaterial.dispose();
+      globeGeometry.dispose();
+      shellGeometry.dispose();
+      ringGeometry.dispose();
+      satelliteGeometry.dispose();
+      starGeometry.dispose();
+      globeMaterial.dispose();
+      shellMaterial.dispose();
+      ringMaterial.dispose();
+      satelliteMaterial.dispose();
+      starMaterial.dispose();
       renderer.dispose();
     };
-  }, []);
+  }, [satellites]);
 
   return (
     <div className="app">
       <canvas ref={canvasRef} className="hero-canvas" aria-hidden="true" />
-      <div className="gradient-orb" />
+      <div className="glow-orb" />
+      <div className="glow-orb small" />
       <div className="content">
         <header className="nav">
-          <div className="logo">Igloo Inc.</div>
+          <div className="logo">igloo</div>
           <nav className="nav-links">
-            <a href="#mission">Mission</a>
-            <a href="#network">Network</a>
-            <a href="#labs">Labs</a>
-            <button type="button" className="nav-cta">Join the community</button>
+            <a href="#collective">Collective</a>
+            <a href="#products">Products</a>
+            <a href="#studio">Studio</a>
+            <a href="#careers">Careers</a>
+            <button type="button" className="nav-cta">Join the collective</button>
           </nav>
         </header>
 
         <main className="hero">
           <div className="hero-copy">
-            <p className="eyebrow">Onchain consumer collective</p>
+            <p className="eyebrow">The onchain social layer</p>
             <h1>
-              Building the coldest
-              <span> crypto community</span>
+              The community powering
+              <span> crypto&rsquo;s next wave</span>
             </h1>
             <p className="lead">
-              Igloo Inc. brings together creators, collectors, and builders to launch immersive consumer
-              experiences across web3. Our mission is to grow the world’s largest onchain community.
+              Igloo builds the infrastructure, experiences, and stories that turn onchain moments into
+              global culture. We unite creators, collectors, and brands with immersive 3D products and
+              real-world activations.
             </p>
             <div className="hero-actions">
-              <button type="button" className="primary">Get early access</button>
+              <button type="button" className="primary">Explore the universe</button>
               <button type="button" className="ghost">View the ecosystem</button>
             </div>
             <div className="metrics">
               <div>
-                <h3>4.2M</h3>
-                <span>Global members</span>
+                <h3>6.9M</h3>
+                <span>Collective members</span>
               </div>
               <div>
-                <h3>128</h3>
-                <span>Partner studios</span>
+                <h3>340+</h3>
+                <span>Live drops shipped</span>
               </div>
               <div>
                 <h3>24/7</h3>
-                <span>Community ops</span>
+                <span>Ops + signals</span>
               </div>
             </div>
           </div>
           <div className="hero-card">
-            <h2>Igloo Signal</h2>
+            <p className="card-tag">Igloo OS</p>
+            <h2>Spatial intelligence for global communities.</h2>
             <p>
-              Adaptive intelligence for onchain communities. Track drops, launch events, and collective
-              momentum in real time.
+              Launch token-gated events, run always-on engagement, and orchestrate multi-chain
+              campaigns with real-time telemetry.
             </p>
-            <div className="card-row">
+            <div className="card-grid">
               <div>
-                <strong>+68%</strong>
-                <span>Weekly engagement</span>
+                <strong>+73%</strong>
+                <span>Community velocity</span>
               </div>
               <div>
-                <strong>3s</strong>
-                <span>Average response</span>
+                <strong>2.4x</strong>
+                <span>Creator output</span>
+              </div>
+              <div>
+                <strong>5M</strong>
+                <span>Signals per day</span>
               </div>
             </div>
-            <button type="button" className="secondary">Request demo</button>
+            <button type="button" className="secondary">Request early access</button>
           </div>
         </main>
 
-        <section id="mission" className="grid">
+        <section id="collective" className="grid">
           <div>
-            <h3>Mission</h3>
+            <h3>Collective</h3>
             <p>
-              We design a social layer for crypto-native brands: community tooling, immersive launches,
-              and real-world activations.
+              A global member network that activates new consumer behaviors, with digital wearables,
+              live quests, and exclusive drops.
             </p>
           </div>
           <div>
             <h3>Network</h3>
             <p>
-              Our ecosystem spans marketplaces, real-time rewards, and creator tooling. Everything is
-              built to scale with the collective.
+              Always-on infrastructure for NFT marketplaces, loyalty experiences, and community
+              tooling. Designed to scale with every partner.
             </p>
           </div>
           <div>
-            <h3>Labs</h3>
+            <h3>Studio</h3>
             <p>
-              A research studio experimenting with spatial experiences, always-on live operations, and
-              new forms of digital identity.
+              A creative lab producing 3D commerce, spatial storytelling, and real-world activations
+              that feel cinematic.
             </p>
           </div>
+        </section>
+
+        <section id="products" className="feature">
+          <div>
+            <h2>Products built for creators + operators.</h2>
+            <p>
+              Modular tools that connect wallet identity, live experiences, and growth loops. Activate
+              your next drop in minutes.
+            </p>
+          </div>
+          <div className="feature-grid">
+            <div>
+              <h4>Signal Room</h4>
+              <p>Monitor your communities across chains with adaptive dashboards.</p>
+            </div>
+            <div>
+              <h4>Quest Engine</h4>
+              <p>Create interactive quests, badges, and IRL rewards for super-fans.</p>
+            </div>
+            <div>
+              <h4>Drop Studio</h4>
+              <p>Launch immersive 3D commerce drops with embedded storytelling.</p>
+            </div>
+          </div>
+        </section>
+
+        <section id="studio" className="cta">
+          <div>
+            <h2>Build with Igloo Studio</h2>
+            <p>
+              We collaborate with brands, artists, and communities to ship next-gen 3D experiences.
+              From ideation to execution, we handle the full journey.
+            </p>
+          </div>
+          <button type="button" className="primary">Talk to the studio</button>
         </section>
       </div>
     </div>
